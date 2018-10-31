@@ -1,0 +1,27 @@
+; Example from TCP/IP Guide (http://www.tcpipguide.com/free/t_DNSMasterFileFormat-4.htm_
+$ORIGIN pcguide.com.
+@ IN SOA ns23.pair.com. root.pair.com. (
+2001072300 ; Serial
+3600 ; Refresh
+300 ; Retry
+604800 ; Expire
+3600 ) ; Minimum
+
+@ IN NS ns23.pair.com.
+@ IN NS ns0.ns0.com.
+
+localhost IN A 127.0.0.1
+@ IN A 209.68.14.80
+IN MX 50 qs939.pair.com.
+@ IN TXT "additional info"
+
+206.56.22. PTR pcguide.com.
+
+
+;www IN CNAME @
+;ftp IN CNAME @
+;mail IN CNAME @
+relay IN CNAME relay.pair.com.
+
+
+_foobar._tcp. SRV 1 0 9 fastcomputer.example.com
