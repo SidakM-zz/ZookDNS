@@ -7,5 +7,5 @@ public abstract interface DNSDatabase {
 	
 	public void writeRecord(ResourceRecord rr) throws IOException;
 	
-	public ResourceRecord retrieveRecord(String name, RecordType rt) throws IOException;
+	public ResourceRecord[] retrieveRecords(String name, RecordType rt) throws IOException;
 }

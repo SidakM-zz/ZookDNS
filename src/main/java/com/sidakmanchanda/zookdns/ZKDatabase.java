@@ -6,9 +6,11 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -21,7 +23,9 @@ import org.apache.zookeeper.data.Stat;
 /**
  * Represents the ZooKeeper instance. Writes and fetches ResourceRecords.
  * 
- * Currently stores records in /records/(record name)/(RecordType)/record(sequence_id)
+ * Currently stores records in /records/(host)/(version)/(RecordType)/(record)
+ * 
+ * As indicated resource records are versioned at the host level in the hierarchy
  * 
  * @see ResourceRecord
  * @see RecordType
@@ -31,11 +35,15 @@ public class ZKDatabase implements DNSDatabase {
 	private static ZooKeeper zookeeper;
 	private static ZKConnection zkConnection;
 	
-	private static String PARENT_PATH = "/records";
+	private static String RECORDS_PATH = "/records";
+	private static String VERSION_PREFIX = "version";
 	private static String RECORD_PREFIX = "record";
 	private static String PATH_DELIMETER = "/";
 	
 	private static final ArrayList<ACL> OPEN_ACL = ZooDefs.Ids.OPEN_ACL_UNSAFE;
+	
+	// Stores the version of records to be accessed for a given host path
+	private Map<String,Integer> hostPathToVersion;
 	
 	/**
 	 * Connect to a ZooKeeper instance and retrieve a ZooKeeper object
@@ -45,10 +53,11 @@ public class ZKDatabase implements DNSDatabase {
 	 */
 	public ZKDatabase(String host) throws IOException {
 		zkConnection = new ZKConnection();
+		hostPathToVersion = new HashMap<String, Integer>();
 		try {
 			zookeeper = zkConnection.connect(host);
-			if (!pathExists(PARENT_PATH)) {
-				createPersistentNode(PARENT_PATH, null);
+			if (!pathExists(RECORDS_PATH)) {
+				createPersistentNode(RECORDS_PATH, null);
 			}
 		} catch(KeeperException | InterruptedException e) {
 			throw new IOException("failed to connect to zookeeper instance", e);
@@ -84,23 +93,51 @@ public class ZKDatabase implements DNSDatabase {
 	 */
 	public void writeRecord(ResourceRecord rr) throws IOException {
 		try {
-			// Create parent path if it does not exist
-			String namePath = getNamePath(rr.getName().getStringName());
-			if (!pathExists(namePath)) {
-				createPersistentNode(namePath, null);
+			// Create name path if it does not exist
+			String hostPath = getHostPath(rr.getName().getStringName());
+			if (!pathExists(hostPath)) {
+				createPersistentNode(hostPath, null);
 			}
 			
-			// create child path if it does not exist
-			String recordPath = getRecordPath(namePath, rr.getType());
-			if (!pathExists(recordPath)) {
-				createPersistentNode(recordPath, null);
+			// Create version path for record if it does not exist
+			Integer version = getHostVersion(hostPath);
+			if (version == null) {
+				version = createNewHostVersion(hostPath, null);
+			}
+			String versionedHostPath = hostPath + PATH_DELIMETER + VERSION_PREFIX + formatZNodeVersion(version);
+			
+			// create record type path if it does not exist
+			String recordTypePath = getRecordTypePath(versionedHostPath, rr.getType());
+			if (!pathExists(recordTypePath)) {
+				createPersistentNode(recordTypePath, null);
 			}
 			
 			// create a new sequential node at the child path
-			createSequentialNode(recordPath + PATH_DELIMETER + RECORD_PREFIX, serializeRecord(rr));
+			createSequentialNode(recordTypePath + PATH_DELIMETER + RECORD_PREFIX, serializeRecord(rr));
 		} catch(KeeperException | InterruptedException e) {
 			throw new IOException("failed to write record", e);
 		}
+	}
+	
+	/**
+	 * Creates a new version zNode for the given host.
+	 * 
+	 * @param hostPath - String 
+	 * @param bytes - byte[]
+	 * @return Integer - new host version
+	 * @throws InterruptedException 
+	 * @throws KeeperException 
+	 */
+	private Integer createNewHostVersion(String hostPath, byte[] bytes) throws KeeperException, InterruptedException {
+		// Create new version znode under the host path
+		String versionedHostPath = hostPath + PATH_DELIMETER + VERSION_PREFIX;
+		createSequentialNode(versionedHostPath, null);
+		
+		// Set the version for the host. To be used future queries and writes through this instance
+		int currentVersion = getSequentialNodeVersion(hostPath);
+		hostPathToVersion.put(hostPath, currentVersion);
+		
+		return currentVersion;
 	}
 	
 	/**
@@ -111,21 +148,33 @@ public class ZKDatabase implements DNSDatabase {
 	 * @return ResourceRecord
 	 * @throws IOException 
 	 */
-	public ResourceRecord retrieveRecord(String name, RecordType rt) throws IOException {
+	public ResourceRecord[] retrieveRecords(String name, RecordType rt) throws IOException {
 		try {
-			String recordPath = getRecordPath(getNamePath(name), rt);
-			Stat stat = getNodeStats(recordPath);
-			// Record Not found
-			if (stat == null) return null;
+			// Get Host Path
+			String hostPath = getHostPath(name);
+			if (!pathExists(hostPath)) return null;
 			
-			// CVersion is the counter used for sequential zNode creation
-			int lastestRecordVersion = stat.getCversion() - 1;
+			// Get version path for the host. If a version to use is not set use the latest version 
+			Integer version = getHostVersion(hostPath);
+			if (version == null) version = getSequentialNodeVersion(hostPath);
+			String versionedHostPath = hostPath + PATH_DELIMETER + VERSION_PREFIX + formatZNodeVersion(version);
 			
-			// Adds cversion to child path
-			String recordVersionedPath = recordPath + PATH_DELIMETER + RECORD_PREFIX + String.format(Locale.ENGLISH, "%010d", lastestRecordVersion);
-			byte[] data = fetchNodeData(recordVersionedPath);
-
-			return deserializeRecord(data);
+			// Get the path leading up to the type of the record
+			String recordTypePath = getRecordTypePath(versionedHostPath, rt);
+			if(!pathExists(recordTypePath)) return null;
+			
+			// Get a list of all the records of the record type
+			List<String> recordNames = getNodeChildren(recordTypePath);
+			
+			// Fetch data for all records of the record type. Deserialize into record objects
+			ResourceRecord[] records = new ResourceRecord[recordNames.size()];
+			for(int x = 0; x < recordNames.size(); x++) {
+				String curPath = recordTypePath + PATH_DELIMETER + recordNames.get(x);
+				byte[] data = fetchNodeData(curPath);
+				records[x] = deserializeRecord(data);
+			}
+			
+			return records;
 		} catch (KeeperException | InterruptedException e) {
 			throw new IOException("failed to retrieve record", e);
 		}
@@ -163,7 +212,10 @@ public class ZKDatabase implements DNSDatabase {
 		CountDownLatch latch = new CountDownLatch(1);
 		byte[] data = zookeeper.getData(path, false, null);
 		return data;
-		
+	}
+	
+	private List<String> getNodeChildren(String path) throws KeeperException, InterruptedException {
+		 return zookeeper.getChildren(path, false);
 	}
 	
 	private boolean pathExists(String path) throws KeeperException, InterruptedException {
@@ -177,13 +229,24 @@ public class ZKDatabase implements DNSDatabase {
 		return stat;
 	}
 	
-	private String getRecordPath(String namePath, RecordType rt) {
+	private String getRecordTypePath(String namePath, RecordType rt) {
 		return namePath + PATH_DELIMETER + rt.toString();
 	}
 	
-	private String getNamePath(String recordName) {
-		String path = PARENT_PATH + PATH_DELIMETER + recordName;
-		return path;
+	private String getHostPath(String recordName) {
+		return RECORDS_PATH + PATH_DELIMETER + recordName;
 	}
 	
+	private int getSequentialNodeVersion(String parentPath) throws KeeperException, InterruptedException {
+		Stat stat = getNodeStats(parentPath);
+		return stat.getCversion() - 1;
+	}
+	
+	private String formatZNodeVersion(int version) {
+		return String.format(Locale.ENGLISH, "%010d", version);
+	}
+
+	private Integer getHostVersion(String hostPath) {
+		return hostPathToVersion.get(hostPath);
+	}
 }

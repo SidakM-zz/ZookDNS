@@ -2,6 +2,7 @@ package com.sidakmanchanda.zookdns;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -21,11 +22,11 @@ public class Response {
 		ArrayList<ResourceRecord> rrs = new ArrayList<ResourceRecord>();
 		
 		for (Question question : request.getQuestions()) {
-			// retrieve new record from ZooKeeper
+			// retrieve new records from ZooKeeper
 			String recordName = question.getName().getStringName();
 			RecordType type = question.getType();
-			ResourceRecord rr = db.retrieveRecord(recordName, type);
-			rrs.add(rr);
+			ResourceRecord[] answers = db.retrieveRecords(recordName, type);
+			rrs.addAll(Arrays.asList(answers));
 		}
 		
 		return generateOutput(rrs);
