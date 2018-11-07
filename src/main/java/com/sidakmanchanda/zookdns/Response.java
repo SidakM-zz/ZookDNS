@@ -26,21 +26,25 @@ public class Response {
 			String recordName = question.getName().getStringName();
 			RecordType type = question.getType();
 			ResourceRecord[] answers = db.retrieveRecords(recordName, type);
-			rrs.addAll(Arrays.asList(answers));
+			if (answers != null) rrs.addAll(Arrays.asList(answers));
 		}
 		
 		return generateOutput(rrs);
 	}
-	
+
 	private Output generateOutput(ArrayList<ResourceRecord> rrs) {
 		// Initialize new DNS output
 		Output out = new Output();
+
+		// Set the response code
+		int rCode = 0;
+		if (rrs.isEmpty()) rCode = 3;
 		
 		// Encode Header
 		Header responseHeader = new Header(request.getHeader());
 		responseHeader.setQr(1);
 		responseHeader.setAA(true);
-		responseHeader.setrCode(0);
+		responseHeader.setrCode(rCode);
 		responseHeader.setAnswerCount(rrs.size());
 		responseHeader.setArCount(0);
 		responseHeader.encodeHeader(out);

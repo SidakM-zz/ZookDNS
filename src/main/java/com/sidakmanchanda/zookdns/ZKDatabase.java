@@ -42,8 +42,10 @@ public class ZKDatabase implements DNSDatabase {
 	
 	private static final ArrayList<ACL> OPEN_ACL = ZooDefs.Ids.OPEN_ACL_UNSAFE;
 	
+	
 	// Stores the version of records to be accessed for a given host path
 	private Map<String,Integer> hostPathToVersion;
+	private RecordSerializer serializer;
 	
 	/**
 	 * Connect to a ZooKeeper instance and retrieve a ZooKeeper object
@@ -54,6 +56,7 @@ public class ZKDatabase implements DNSDatabase {
 	public ZKDatabase(String host) throws IOException {
 		zkConnection = new ZKConnection();
 		hostPathToVersion = new HashMap<String, Integer>();
+		serializer = new JsonSerializer();
 		try {
 			zookeeper = zkConnection.connect(host);
 			if (!pathExists(RECORDS_PATH)) {
@@ -113,7 +116,7 @@ public class ZKDatabase implements DNSDatabase {
 			}
 			
 			// create a new sequential node at the child path
-			createSequentialNode(recordTypePath + PATH_DELIMETER + RECORD_PREFIX, serializeRecord(rr));
+			createSequentialNode(recordTypePath + PATH_DELIMETER + RECORD_PREFIX, serializer.serializeRecord(rr));
 		} catch(KeeperException | InterruptedException e) {
 			throw new IOException("failed to write record", e);
 		}
@@ -171,33 +174,13 @@ public class ZKDatabase implements DNSDatabase {
 			for(int x = 0; x < recordNames.size(); x++) {
 				String curPath = recordTypePath + PATH_DELIMETER + recordNames.get(x);
 				byte[] data = fetchNodeData(curPath);
-				records[x] = deserializeRecord(data);
+				records[x] = serializer.deserializeRecord(data);
 			}
 			
 			return records;
 		} catch (KeeperException | InterruptedException e) {
 			throw new IOException("failed to retrieve record", e);
 		}
-	}
-
-	private byte[] serializeRecord(ResourceRecord rr) throws IOException {
-		ByteArrayOutputStream bao = new ByteArrayOutputStream();
-		ObjectOutputStream oa = new ObjectOutputStream(bao);
-		
-		oa.writeObject(rr);
-		return bao.toByteArray();
-	}
-	
-	private ResourceRecord deserializeRecord(byte[] recordBytes) throws IOException {
-		ByteArrayInputStream bai = new ByteArrayInputStream(recordBytes);
-		ObjectInputStream oi = new ObjectInputStream(bai);
-		ResourceRecord rr;
-		try {
-			rr = (ResourceRecord) oi.readObject();
-		} catch (ClassNotFoundException e) {
-			throw new IOException("invalid data at znode");
-		}
-		return rr;
 	}
 	
 	private void createPersistentNode(String path, byte[] data) throws KeeperException, InterruptedException {

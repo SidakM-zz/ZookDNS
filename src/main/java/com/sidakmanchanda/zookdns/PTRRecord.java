@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.text.ParseException;
 
 public class PTRRecord extends ResourceRecord {
-	DNSName name;
+	DNSName hostName;
 	
 	public PTRRecord(RecordClass DNSClass, DNSName name, long ttl) {
 		super(RecordType.PTR, DNSClass, name, ttl);
@@ -12,12 +12,12 @@ public class PTRRecord extends ResourceRecord {
 	
 	@Override
 	public void parseDataFromStream(MasterFileTokenizer st) throws IOException, ParseException {
-		name = new DNSName(st.parseWord());
+		hostName = new DNSName(st.parseWord());
 	}
 
 	@Override
 	public String toString() {
-		return "PTRRecord [name=" + name + ", toString()=" + super.toString() + "]";
+		return "PTRRecord [name=" + hostName + ", toString()=" + super.toString() + "]";
 	}
 
 	@Override
@@ -29,7 +29,7 @@ public class PTRRecord extends ResourceRecord {
 		
 		// Write Record Data
 		int rdStart = out.getPos();
-		name.encodeName(out);
+		hostName.encodeName(out);
 		
 		// Write Record Data Length
 		int rdLength = out.getPos() - rdStart;
