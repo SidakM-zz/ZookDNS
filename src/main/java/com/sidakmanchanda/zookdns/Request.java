@@ -31,7 +31,6 @@ public class Request {
 		for(int x = 0; x < numQuestions; x++) {
 			this.questions[x] = new Question();	
 			this.questions[x].populateQuestion(this.input);
-//			this.questions[x].printQuestion();
 		}		
 	}
 	

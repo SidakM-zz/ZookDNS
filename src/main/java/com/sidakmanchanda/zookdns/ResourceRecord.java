@@ -51,7 +51,7 @@ abstract class ResourceRecord implements java.io.Serializable {
 	 */
 	protected void encodeBase(Output out) {
 		name.encodeName(out);
-
+		out.write16BitInt(type.ordinal() + 1);
 		out.write16BitInt(dClass.ordinal() + 1);
 		out.write32BitInt(ttl);
 	}

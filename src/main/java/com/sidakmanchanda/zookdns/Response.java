@@ -12,23 +12,28 @@ public class Response {
 	private Request request;
 	private DNSDatabase db;
 	private static final Logger log = LogManager.getLogger(ZookDNS.class);
-	
-	public Response(Request request, DNSDatabase db){
+
+	public Response(Request request, DNSDatabase db) {
 		this.request = request;
 		this.db = db;
 	}
-	
-	public Output buildResponse() throws IOException, InterruptedException, KeeperException {
+
+	public Output buildResponse() {
 		ArrayList<ResourceRecord> rrs = new ArrayList<ResourceRecord>();
 		
 		for (Question question : request.getQuestions()) {
-			// retrieve new records from ZooKeeper
-			String recordName = question.getName().getStringName();
-			RecordType type = question.getType();
-			ResourceRecord[] answers = db.retrieveRecords(recordName, type);
-			if (answers != null) rrs.addAll(Arrays.asList(answers));
+			try {
+				// retrieve new records from ZooKeeper
+				String recordName = question.getName().getStringName();
+				RecordType type = question.getType();
+				ResourceRecord[] answers = db.retrieveRecords(recordName, type);
+				if (answers != null) rrs.addAll(Arrays.asList(answers));
+			} catch(IOException e) {
+				log.error("could not retreive records from db", e);
+				return getErrorResponse();
+			}
 		}
-		
+
 		return generateOutput(rrs);
 	}
 
@@ -37,16 +42,11 @@ public class Response {
 		Output out = new Output();
 
 		// Set the response code
-		int rCode = 0;
-		if (rrs.isEmpty()) rCode = 3;
+		ResponseCode rCode = ResponseCode.NoError;
+		if (rrs.isEmpty()) rCode = ResponseCode.NameError;
 		
 		// Encode Header
-		Header responseHeader = new Header(request.getHeader());
-		responseHeader.setQr(1);
-		responseHeader.setAA(true);
-		responseHeader.setrCode(rCode);
-		responseHeader.setAnswerCount(rrs.size());
-		responseHeader.setArCount(0);
+		Header responseHeader = getResponseHeader(rCode, rrs.size());
 		responseHeader.encodeHeader(out);
 		
 		
@@ -62,7 +62,23 @@ public class Response {
 		
 		return out;
 	}
-	
-	
-	
+
+	private Output getErrorResponse() {
+		Output out = new Output();
+		Header responseHeader = getResponseHeader(ResponseCode.ServerFailure, 0);
+		responseHeader.encodeHeader(out);
+		
+		return out;
+	}
+
+	private Header getResponseHeader(ResponseCode rCode, int answerCount) {
+		Header head = new Header(request.getHeader());
+		head.setQr(1);
+		head.setAA(true);
+		head.setrCode(rCode);
+		head.setArCount(0);
+		head.setAnswerCount(answerCount);
+		return head;
+	}
+
 }

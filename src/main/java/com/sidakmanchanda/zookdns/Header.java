@@ -16,7 +16,7 @@ public class Header {
 	private boolean tc;
 	private boolean rd;
 	private boolean ra;
-	private int rCode;
+	private ResponseCode rCode;
 	private int questionCount;
 	private int answerCount;
 	private int nsCount;
@@ -30,7 +30,7 @@ public class Header {
 		this.aa = aa;
 	}
 
-	public void setrCode(int rCode) {
+	public void setrCode(ResponseCode rCode) {
 		this.rCode = rCode;
 	}
 
@@ -76,7 +76,7 @@ public class Header {
 		// populate flags and codes
 		int flagsAndCodes = input.get16BitInt();
 		
-		this.rCode = flagsAndCodes & 0x4;
+		this.rCode = ResponseCode.values()[flagsAndCodes & 0x4];
 		this.ra = ((flagsAndCodes >> 7) & 0x1) != 0;
 		this.rd = ((flagsAndCodes >> 8) & 0x1) != 0;
 		this.tc = ((flagsAndCodes >> 9) & 0x1) != 0;
@@ -97,7 +97,7 @@ public class Header {
 		byte flagOne = (byte) (qr << 7 | (opCode << 3) | getInt(aa) << 2 | getInt(tc) << 1 | getInt(rd));
 		out.writeByte(flagOne);
 		
-		byte flagTwo = (byte) (getInt(ra) << 7 | rCode);
+		byte flagTwo = (byte) (getInt(ra) << 7 | rCode.ordinal());
 		out.writeByte(flagTwo);
 		
 		out.write16BitInt(questionCount);
@@ -138,7 +138,7 @@ public class Header {
 		return ra;
 	}
 
-	public int getRCode() {
+	public ResponseCode getRCode() {
 		return rCode;
 	}
 
