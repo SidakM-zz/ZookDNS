@@ -9,11 +9,12 @@ import java.net.UnknownHostException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class UDPServer implements Runnable {
-	private String address;
+	private InetAddress address;
 	private int port;
 	private int poolSize;
 	private DNSDatabase db;
@@ -28,12 +29,12 @@ public class UDPServer implements Runnable {
 	public volatile boolean stop = false;
 	
 	
-	public UDPServer(String address, int port, int poolSize, DNSDatabase db) throws SocketException, UnknownHostException {
-		this.address = address;
-		this.port = port;
-		this.poolSize = poolSize;
+	public UDPServer(ServerConfig config, DNSDatabase db) throws SocketException, UnknownHostException {
+		this.address = config.getServerAddress();
+		this.port = config.getServerPort();
+		this.poolSize = config.getServerThreadPool();
 		this.db = db;
-		socket = new DatagramSocket(this.port, InetAddress.getByName(this.address));
+		socket = new DatagramSocket(this.port, this.address);
 	}
 	
 	public void run() {

@@ -23,13 +23,7 @@ public class UDPHandler implements Runnable {
 	public void run() {
 		Request request = client.parseClientRequest();
 		Response response = new Response(request, db);
-		Output out;
-		try {
-			out = response.buildResponse();
-		} catch (IOException | InterruptedException | KeeperException e) {
-			log.error("could not build response");
-			return;
-		}
+		Output out = response.buildResponse();
 		
 		byte [] reply = out.getBytes();
 		
@@ -41,8 +35,6 @@ public class UDPHandler implements Runnable {
 			socket.send(packet);
 		} catch (IOException e) {
 			e.printStackTrace();
-		}
-		
+		}	
 	}
-
 }

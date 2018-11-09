@@ -52,7 +52,7 @@ public class HeaderTest extends TestCase {
 		assertEquals(false, this.header.isTc());
 		assertEquals(true, this.header.isRd());
 		assertEquals(false, this.header.isRa());
-		assertEquals(0, this.header.getRCode());
+		assertEquals(ResponseCode.NoError, this.header.getRCode());
 		assertEquals(1, this.header.getQuestionCount());
 		assertEquals(0, this.header.getAnswerCount());
 		assertEquals(0, this.header.getNsCount());

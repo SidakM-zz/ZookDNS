@@ -53,12 +53,12 @@ public class ZKDatabase implements DNSDatabase {
 	 * @param host
 	 * @throws IOException
 	 */
-	public ZKDatabase(String host) throws IOException {
+	public ZKDatabase(DatabaseConfig config) throws IOException {
 		zkConnection = new ZKConnection();
 		hostPathToVersion = new HashMap<String, Integer>();
 		serializer = new JsonSerializer();
 		try {
-			zookeeper = zkConnection.connect(host);
+			zookeeper = zkConnection.connect(config.getDatabaseAddress().getHostAddress());
 			if (!pathExists(RECORDS_PATH)) {
 				createPersistentNode(RECORDS_PATH, null);
 			}
