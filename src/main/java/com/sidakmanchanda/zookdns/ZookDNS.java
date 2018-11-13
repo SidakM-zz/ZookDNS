@@ -1,17 +1,13 @@
 package com.sidakmanchanda.zookdns;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Properties;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.zookeeper.KeeperException;
 
 public class ZookDNS {
 	private static final Logger log = LogManager.getLogger(ZookDNS.class);

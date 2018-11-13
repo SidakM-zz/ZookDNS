@@ -2,7 +2,6 @@ package com.sidakmanchanda.zookdns;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.Properties;
 
 public class ZookDNSConfig implements ServerConfig, DatabaseConfig {

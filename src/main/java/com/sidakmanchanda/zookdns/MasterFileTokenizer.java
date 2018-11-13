@@ -16,8 +16,6 @@ public final class MasterFileTokenizer extends StreamTokenizer {
 	private static final char[] WORD_CHARS = new char[] { '.', '_','-','0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
 	private static final Character[] IGNORE_CHARS = new Character[] { '(', ')'};
 	private static final Set<Character> IGNORE_CHARS_SET = new HashSet<Character>(Arrays.asList(IGNORE_CHARS));
-	
-	private static final String[] DNS_CLASSES = new String[] { "IN", "CS", "CH", "HS" };
 	private static final Map<String, RecordClass> DNS_CLASS_MAP;
 	static {
 		Map<String, RecordClass> temp = new HashMap<String, RecordClass>();

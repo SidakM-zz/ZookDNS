@@ -1,7 +1,6 @@
 package com.sidakmanchanda.zookdns;
 
 import java.io.IOException;
-import java.io.StreamTokenizer;
 import java.net.InetAddress;
 import java.text.ParseException;
 

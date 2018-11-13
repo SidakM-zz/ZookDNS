@@ -5,8 +5,6 @@ package com.sidakmanchanda.zookdns;
  * @author sidak 
  */
 public class Header {
-	private static final int flagCodeLength = 2;
-	
 	private int id;
 	private int qr;
 	private int opCode;

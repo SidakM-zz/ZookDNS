@@ -1,20 +1,13 @@
 package com.sidakmanchanda.zookdns;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
@@ -192,7 +185,6 @@ public class ZKDatabase implements DNSDatabase {
 	}
 	
 	private byte[] fetchNodeData(String path) throws KeeperException, InterruptedException {
-		CountDownLatch latch = new CountDownLatch(1);
 		byte[] data = zookeeper.getData(path, false, null);
 		return data;
 	}

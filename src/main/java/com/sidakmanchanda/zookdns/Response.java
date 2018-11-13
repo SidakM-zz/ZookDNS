@@ -3,10 +3,8 @@ package com.sidakmanchanda.zookdns;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.zookeeper.KeeperException;
 
 public class Response {
 	private Request request;

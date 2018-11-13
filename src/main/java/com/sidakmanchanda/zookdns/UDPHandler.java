@@ -5,7 +5,6 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.zookeeper.KeeperException;
 
 public class UDPHandler implements Runnable {
 	private DatagramSocket socket;
@@ -34,7 +33,7 @@ public class UDPHandler implements Runnable {
 		try {
 			socket.send(packet);
 		} catch (IOException e) {
-			e.printStackTrace();
+			log.error(e);
 		}	
 	}
 }

@@ -26,3 +26,5 @@ relay IN CNAME relay.pair.com.
 
 
 _foobar._tcp. SRV 1 0 9 fastcomputer.example.com
+
+; east._http._tcp.sidakmanchanda.com SRV 1 0 1 bigserver.example.com
