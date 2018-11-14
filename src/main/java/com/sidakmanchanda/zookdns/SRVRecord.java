@@ -8,7 +8,7 @@ public class SRVRecord extends ResourceRecord {
 	int weight;
 	int port;
 	DNSName target;
-	
+
 	public SRVRecord(RecordClass DNSClass, DNSName name, long ttl) {
 		super(RecordType.SRV, DNSClass, name, ttl);
 	}
@@ -47,6 +47,10 @@ public class SRVRecord extends ResourceRecord {
 	public String toString() {
 		return "SRVRecord [priority=" + priority + ", weight=" + weight + ", port=" + port + ", target=" + target
 				+ ", toString()=" + super.toString() + "]";
+	}
+	
+	public DNSName getTarget() {
+		return target;
 	}
 	
 }
